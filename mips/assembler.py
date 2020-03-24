@@ -35,7 +35,10 @@ class MemoryFile:
             self._write_cell(cell)
             self.file.write(" ")
 
-        self.file.write(f"// {comment}\n")
+        if comment is not None:
+            self.file.write(f"// {comment}")
+        
+        self.file.write('\n')
 
     def write_comment(self, comment):
         self.file.write(f"// {comment}\n")
