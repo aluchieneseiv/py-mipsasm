@@ -20,10 +20,16 @@ class RegisterTransformer(Transformer):
         return OffsetRegister(reg, int(offset))
 
     def numeric_reg(self, reg_id):
-        return regs.from_id(int(reg_id))
+        try:
+            return regs.from_id(int(reg_id))
+        except Exception as ex:
+            raise Exception(f"line {reg_id.line}: {ex}")
 
     def named_reg(self, name):
-        return regs.from_name(name)
+        try:
+            return regs.from_name(name)
+        except Exception as ex:
+            raise Exception(f"line {name.line}: {ex}")
 
 @v_args(inline=True)
 class LabelTransformer(Transformer):
@@ -39,7 +45,10 @@ class LabelTransformer(Transformer):
 @v_args(inline=True)
 class InstrTransformer(Transformer):
     def create_instr(self, mnemonic, args):
-        return resolve_instruction(mnemonic, args.children)
+        try:
+            return resolve_instruction(mnemonic, args.children)
+        except Exception as ex:
+            raise Exception(f"line {mnemonic.line}: {ex}")
 
 @v_args(inline=True)
 class DeclTransformer(Transformer):
