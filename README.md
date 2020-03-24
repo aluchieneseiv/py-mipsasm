@@ -7,6 +7,7 @@ All non-fp instructions from [here](http://www-inst.eecs.berkeley.edu/~cs61c/res
 The assembler creates two files:
 - `rom.mem`
 - `ram.mem`
+
 Both files are in Verilog's format for `$readmemh`.
 
 ## Requirements
