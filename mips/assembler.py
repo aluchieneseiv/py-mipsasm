@@ -4,28 +4,38 @@ from .parsetypes import *
 from .instructions import Instruction
 
 class MemoryFile:
-    def __init__(self, filename, align=None):
+    def __init__(self, filename, cell_size = 1, align = None):
         self.file = io.open(filename, "w")
         self.addr = 0
+        self.cell_size = cell_size
         self.align = align
 
-    def write_bytes(self, bytes, comment=None):
+    def _write_cell(self, cell):
+        self.file.write(cell.hex())
 
-        if self.align is not None and len(bytes) > self.align:
-            q = len(bytes) % self.align
-            if q == 0:
-                self.write_bytes(bytes[:-self.align])
-                bytes = bytes[-self.align:]
-            else:
-                self.write_bytes(bytes[:-q])
-                bytes = bytes[-q:]
+        self.addr = self.addr + 1
+
+    def write_bytes(self, bytes, comment=None):
+        if len(bytes) % self.cell_size:
+            raise Exception("Bytes not aligned with cell size!")
+
+        align = self.align or 1
+
+        cells = [bytes[i:i+self.cell_size] for i in range(0, len(bytes), self.cell_size)]
+        aligned = [cells[i:i+align] for i in range(0, len(cells), align)]
+
+        for i in range(len(aligned) - 1):
+            for cell in aligned[i]:
+                self._write_cell(cell)
+                self.file.write(" ")
+
+            self.file.write("\n")
         
-        if comment is None:
-            self.file.write(bytes.hex() + '\n')
-        else:
-            self.file.write(f"{bytes.hex()} // {comment}\n")
-        
-        self.addr = self.addr + len(bytes)
+        for cell in aligned[-1]:
+            self._write_cell(cell)
+            self.file.write(" ")
+
+        self.file.write(f"// {comment}\n")
 
     def write_comment(self, comment):
         self.file.write(f"// {comment}\n")
@@ -62,8 +72,8 @@ class Context:
 class Assembler:
     def __init__(self, outram, outrom, debug=False):
         self._debug = debug
-        self._rom = MemoryFile(outrom)
-        self._ram = MemoryFile(outram)
+        self._rom = MemoryFile(outrom, cell_size=4)
+        self._ram = MemoryFile(outram, align=4)
 
     def assemble(self, lines):
         ctx = Context(self._ram, self._rom, debug=self._debug)
