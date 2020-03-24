@@ -681,14 +681,16 @@ class Ble(Instruction):
     def __len__(self):
         return 2
 
-# Others
+# Instruction resolving
 
-regs.Register._hack_hash = "reg"
-Constant._hack_hash = 'imm'
-OffsetRegister._hack_hash = 'off'
-LabelRef._hack_hash = 'lbl'
+setattr(regs.Register, '_hack_hash', "reg")
+setattr(Constant, '_hack_hash', "imm")
+setattr(OffsetRegister, '_hack_hash', "off")
+setattr(LabelRef, '_hack_hash', "lbl")
 
 _instruction_resolve = {
+    # Instructions
+
     ("add", "reg", "reg", "reg"): Add,
     ("addi", "reg", "reg", "imm"): Addi,
     ("addiu", "reg", "reg", "imm"): Addiu,
@@ -723,6 +725,8 @@ _instruction_resolve = {
 
     ("nop",): Nop,
 
+    # Pseudoinstructions
+
     ("move", "reg", "reg"): Move,
     ("li", "reg", "imm"): Li,
     ("la", "reg", "lbl"): La,
@@ -730,6 +734,13 @@ _instruction_resolve = {
     ("ble", "reg", "reg", "lbl"): Ble,
     ("bgt", "reg", "reg", "lbl"): Bgt,
     ("bge", "reg", "reg", "lbl"): Bge,
+
+    # Instruction aliases
+
+    ("not", "reg", "reg"): lambda dest, reg: Nor(dest, reg, reg.zero),
+    ("mov", "off", "reg"): lambda dest, source: Sw(source, dest),
+    ("mov", "reg", "off"): lambda dest, source: Lw(dest, source),
+    ("mov", "reg", "reg"): Move,
 }
 
 def _type_match(args, form):

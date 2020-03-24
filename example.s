@@ -11,8 +11,9 @@ main:
 my_loop:
     li $a2, 32800
     addi $a0, $a0, 1
-    move $a0, $a0
-    lw $a1, 0($sp)
+    mov $a0, $a0
+    mov $a1, 0($sp)
+    mov 0($sp), $a1
     blt $a0, $s0, my_loop
 
 @0x90

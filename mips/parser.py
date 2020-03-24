@@ -74,7 +74,7 @@ class SegmentTransformer(Transformer):
     def data_segm(self, lst):
         return DataSegment(lst)
 
-transformer = RegisterTransformer() * DeclTransformer() * ConstTransformer() * LabelTransformer() * InstrTransformer()
+transformer = RegisterTransformer() * DeclTransformer() * ConstTransformer() * LabelTransformer() * InstrTransformer() * SegmentTransformer()
 parser = Lark.open("mips/mipsasm.lark", parser='lalr')
 
 def parse(text):
@@ -83,7 +83,5 @@ def parse(text):
     
     tree = parser.parse(text)
     tree = transformer.transform(tree)
-
-    tree = SegmentTransformer().transform(tree)
 
     return tree.children
