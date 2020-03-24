@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(description="Compile mips code")
 
 parser.add_argument('-ram', default='ram.mem', help="output ram file (default: ram.mem)")
 parser.add_argument('-rom', default='rom.mem', help="output rom file (default: rom.mem)")
-parser.add_argument('-debug', action='store_const', dest='debug', const=True, default=False, help="enable debug prints")
+parser.add_argument('-debug', action='store_const', dest='debug', const=True, default=False, help="enable debug prints and comments in compiled files")
 parser.add_argument('input', help="input assembly file")
 
 args = parser.parse_args()
