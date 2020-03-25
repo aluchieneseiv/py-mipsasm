@@ -8,11 +8,11 @@ class ConstTransformer(Transformer):
     def integer_const(self, val):
         return Constant(int(val))
 
-    def char_const(self, val):
-        return Constant(ord(val[1:-1]))
-
     def hex_const(self, val):
         return Constant(int(val[2:], base=16))
+
+    def string_const(self, val):
+        return StringConstant(val[1:-1])
 
 @v_args(inline=True)
 class RegisterTransformer(Transformer):
@@ -50,22 +50,21 @@ class InstrTransformer(Transformer):
         except Exception as ex:
             raise Exception(f"line {mnemonic.line}: {ex}")
 
+_decl_types = {
+    "word": lambda val: WordDecl(val.numeric_val()),
+    "half": lambda val: HalfDecl(val.numeric_val()),
+    "word": lambda val: WordDecl(val.numeric_val()),
+    "byte": lambda val: ByteDecl(val.numeric_val()),
+    "asciiz": lambda val: AsciizDecl(val.val)
+}
+
 @v_args(inline=True)
 class DeclTransformer(Transformer):
-    def create_word(self, val):
-        return WordDecl(int(val))
+    def create_decl(self, decl_type, val):
+        if decl_type not in _decl_types:
+            raise Exception(f"line {decl_type.line}: No such declaration type: .{decl_type}")
 
-    def create_half(self, val):
-        return HalfDecl(int(val))
-
-    def create_byte(self, val):
-        return ByteDecl(int(val))
-
-    def create_asciiz(self, val):
-        return AsciizDecl(val[1:-1])
-
-    def create_space(self, val):
-        return SpaceDecl(val)
+        return _decl_types[decl_type](val)
 
 class SegmentTransformer(Transformer):
     def text_segm(self, lst):
@@ -74,7 +73,7 @@ class SegmentTransformer(Transformer):
     def data_segm(self, lst):
         return DataSegment(lst)
 
-transformer = RegisterTransformer() * DeclTransformer() * ConstTransformer() * LabelTransformer() * InstrTransformer() * SegmentTransformer()
+transformer = RegisterTransformer() * ConstTransformer() * DeclTransformer() * LabelTransformer() * InstrTransformer() * SegmentTransformer()
 parser = Lark.open("mips/mipsasm.lark", parser='lalr')
 
 def parse(text):

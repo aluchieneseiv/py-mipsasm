@@ -8,6 +8,16 @@ class Constant:
     def __repr__(self):
         return f"Constant({self.val})"
 
+    def numeric_val(self):
+        return self.val
+
+class StringConstant(Constant):
+    def numeric_val(self):
+        try:
+            return ord(self.val)
+        except:
+            raise Exception("Cannot take numeric value of string")
+
 class OffsetRegister:
     def __init__(self, reg, offset):
         self.reg = reg

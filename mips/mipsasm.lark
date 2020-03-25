@@ -1,17 +1,14 @@
 start: data? text
 
-data: ".data" (mem_label? label? decl? _NL)*          -> data_segm
+data: _DATA (mem_label? label? decl? _NL)*          -> data_segm
+_DATA.2: ".data"
 
-?decl: ".word" SIGNED_INT                   -> create_word
-    | ".half" SIGNED_INT                    -> create_half
-    | ".byte" SIGNED_INT                    -> create_byte
-    | ".asciiz" ESCAPED_STRING              -> create_asciiz
-    | ".space" INT                          -> create_space
+?decl: "." NAME constant                            -> create_decl
 
-text: ".text" (mem_label? label? instr? _NL)*         -> text_segm
+text: _TEXT (mem_label? label? instr? _NL)*         -> text_segm
+_TEXT.2: ".text"
 
-?instr: mnemonic args                       -> create_instr
-?mnemonic: NAME
+?instr: NAME args                                   -> create_instr
 
 args: (arg ("," arg)*)?
 
@@ -24,9 +21,9 @@ args: (arg ("," arg)*)?
 ?reg: "$" INT                               -> numeric_reg
     | "$" /\w[\w\d]+/                       -> named_reg
 
-?constant: /'.'/                            -> char_const
-    | HEX_INT                               -> hex_const
+?constant: HEX_INT                          -> hex_const
     | SIGNED_INT                            -> integer_const
+    | ESCAPED_STRING                        -> string_const
 
 HEX_INT.2: /0x[0-9a-fA-F]+/
 
