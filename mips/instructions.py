@@ -183,7 +183,7 @@ class J(Instruction):
     def to_bytes(self, ctx):
         return JType.build(dict(
             op = 0x2,
-            addr = ctx.get_label(self.lbl.name)
+            addr = ctx.absolute_jmp(self.lbl.name)
         ))
     
     def __str__(self):
@@ -617,6 +617,20 @@ class La(PseudoInstruction):
     def __len__(self):
         return 2
 
+class Jf(PseudoInstruction):
+    def __init__(self, lbl):
+        self.lbl = lbl
+
+    def to_bytes(self, ctx):
+        return La(regs.at, self.lbl).to_bytes(ctx) \
+            + Jr(regs.at).to_bytes(ctx)
+
+    def __str__(self):
+        return f"jf {self.lbl.name}"
+
+    def __len__(self):
+        return 3
+
 class Blt(PseudoInstruction):
     def __init__(self, a, b, lbl):
         self.a = a
@@ -730,6 +744,7 @@ _instruction_resolve = {
     ("move", "reg", "reg"): Move,
     ("li", "reg", "imm"): Li,
     ("la", "reg", "lbl"): La,
+    ("jf", "lbl"): Jf,
     ("blt", "reg", "reg", "lbl"): Blt,
     ("ble", "reg", "reg", "lbl"): Ble,
     ("bgt", "reg", "reg", "lbl"): Bgt,

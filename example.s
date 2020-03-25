@@ -26,3 +26,7 @@ spim_test:
     jal main
     la $ra, main
     nop
+    jf far_label
+
+@0x80000000
+far_label:

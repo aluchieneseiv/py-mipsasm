@@ -72,6 +72,14 @@ class Context:
     def relative_jmp(self, label):
         return self.get_label(label) - self.rom.addr + 1
 
+    def absolute_jmp(self, label):
+        new_pc = self.get_label(label)
+
+        if self.rom.addr >> 30 == new_pc >> 30:
+            return ~((-1) << 30) & new_pc
+        
+        raise Exception(f"Jump to label {label} is too far")
+
 class Assembler:
     def __init__(self, outram, outrom, debug=False):
         self._debug = debug
@@ -139,6 +147,9 @@ class Assembler:
                     elif isinstance(line, MemLabel):
                         self._ram.set_addr(line.addr)
 
+                        if self._debug:
+                            print(line)
+
                     elif self._debug:
                         print(line)
                         self._ram.write_comment(line)
@@ -160,6 +171,9 @@ class Assembler:
                     
                     elif isinstance(line, MemLabel):
                         self._rom.set_addr(line.addr)
+
+                        if self._debug:
+                            print(line)
 
                     elif self._debug:
                         print(line)
