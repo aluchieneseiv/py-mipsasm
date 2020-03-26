@@ -1,3 +1,5 @@
+import re
+
 class Constant:
     def __init__(self, val):
         self.val = val
@@ -95,7 +97,7 @@ class AsciizDecl(Decl):
         return f".asciiz \"{self.val}\""
 
     def to_bytes(self):
-        return self.val.encode() + b'\0'
+        return self.val.encode().decode('unicode_escape').encode() + b'\0'
 
     def __len__(self):
         return len(self.val) + 1

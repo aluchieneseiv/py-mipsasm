@@ -2,7 +2,7 @@
 a:
     .word 20
 str:
-    .asciiz "Hello world!"
+    .asciiz "Hello world!\n"
 .text
 main:
     addu $a0, $0, $0
