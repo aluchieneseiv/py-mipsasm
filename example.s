@@ -30,3 +30,4 @@ spim_test:
 
 @0x80000000
 far_label:
+    mov $sp 0x100

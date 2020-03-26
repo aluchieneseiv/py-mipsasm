@@ -22,13 +22,13 @@ class RegisterTransformer(Transformer):
 
     def numeric_reg(self, reg_id):
         try:
-            return regs.from_id(int(reg_id))
+            return regs.from_id(int(reg_id[1:]))
         except Exception as ex:
             raise Exception(f"line {reg_id.line}: {ex}")
 
     def named_reg(self, name):
         try:
-            return regs.from_name(name)
+            return regs.from_name(name[1:])
         except Exception as ex:
             raise Exception(f"line {name.line}: {ex}")
 

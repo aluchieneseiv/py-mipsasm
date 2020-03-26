@@ -10,7 +10,7 @@ _TEXT.2: ".text"
 
 ?instr: NAME args                                   -> create_instr
 
-args: (arg ("," arg)*)?
+args: (arg (","? arg)*)?
 
 ?arg: reg
     | offset_reg
@@ -18,8 +18,8 @@ args: (arg ("," arg)*)?
     | constant
 
 ?offset_reg: SIGNED_INT "(" reg ")"         -> offset_reg
-?reg: "$" INT                               -> numeric_reg
-    | "$" /\w[\w\d]+/                       -> named_reg
+?reg: /\$\d+/                               -> numeric_reg
+    | /\$\w[\w\d]+/                         -> named_reg
 
 ?constant: HEX_INT                          -> hex_const
     | SIGNED_INT                            -> integer_const

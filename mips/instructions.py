@@ -594,14 +594,17 @@ class Li(PseudoInstruction):
         self.imm = imm
 
     def to_bytes(self, ctx):
-        return Addiu(self.dest, regs.zero, Constant(self.imm.val & 0xFFFF)).to_bytes(ctx) \
-            + Lui(self.dest, Constant(self.imm.val >> 16)).to_bytes(ctx)
+        if self.imm.val >> 16 != 0:
+            return Addiu(self.dest, regs.zero, Constant(self.imm.val & 0xFFFF)).to_bytes(ctx) \
+                + Lui(self.dest, Constant(self.imm.val >> 16)).to_bytes(ctx)
+        
+        return Addiu(self.dest, regs.zero, Constant(self.imm.val & 0xFFFF)).to_bytes(ctx)
 
     def __str__(self):
         return f"li {self.dest}, {self.imm}"
 
     def __len__(self):
-        return 2
+        return 2 if self.imm.val >> 16 != 0 else 1
 
 class La(PseudoInstruction):
     def __init__(self, reg, lbl):
@@ -756,6 +759,7 @@ _instruction_resolve = {
     ("mov", "off", "reg"): lambda dest, source: Sw(source, dest),
     ("mov", "reg", "off"): lambda dest, source: Lw(dest, source),
     ("mov", "reg", "reg"): Move,
+    ("mov", "reg", "imm"): Li,
 }
 
 def _type_match(args, form):
