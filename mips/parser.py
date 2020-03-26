@@ -2,7 +2,7 @@ from lark import Transformer, Lark, v_args
 import mips.regs as regs
 from mips.parsetypes import *
 from mips.instructions import resolve_instruction
-import os
+from os import path
 
 @v_args(inline = True)
 class ConstTransformer(Transformer):
@@ -75,7 +75,7 @@ class SegmentTransformer(Transformer):
         return DataSegment(lst)
 
 transformer = RegisterTransformer() * ConstTransformer() * DeclTransformer() * LabelTransformer() * InstrTransformer() * SegmentTransformer()
-grammar_path = path = os.path.dirname(os.path.abspath(__file__))
+grammar_path = path.dirname(path.abspath(__file__))
 parser = Lark.open(f"{grammar_path}/mipsasm.lark", parser='lalr')
 
 def parse(text):
