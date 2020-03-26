@@ -17,26 +17,29 @@ class MemoryFile:
 
     def write_bytes(self, bytes, comment=None):
         if len(bytes) % self.cell_size:
-            raise Exception("Bytes not aligned with cell size!")
+            raise Exception("Bytes not multiple of cell size!")
 
         align = self.align or 1
 
         cells = [bytes[i:i+self.cell_size] for i in range(0, len(bytes), self.cell_size)]
         aligned = [cells[i:i+align] for i in range(0, len(cells), align)]
 
-        for i in range(len(aligned) - 1):
-            for cell in aligned[i]:
+        for line in aligned[:-1]:
+            for cell in line[:-1]:
                 self._write_cell(cell)
                 self.file.write(" ")
 
+            self._write_cell(line[-1])
             self.file.write("\n")
         
-        for cell in aligned[-1]:
+        for cell in aligned[-1][:-1]:
             self._write_cell(cell)
             self.file.write(" ")
 
+        self._write_cell(aligned[-1][-1])
+
         if comment is not None:
-            self.file.write(f"// {comment}")
+            self.file.write(f" // {comment}")
         
         self.file.write('\n')
 
