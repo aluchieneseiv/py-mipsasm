@@ -16,7 +16,7 @@ class Constant:
 class StringConstant(Constant):
     def numeric_val(self):
         try:
-            return ord(self.val)
+            return ord(self.val.encode().decode('unicode_escape').encode())
         except:
             raise Exception("Cannot take numeric value of string")
 

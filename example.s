@@ -1,6 +1,7 @@
 .data
 a:
     .word 20
+    .byte "\n"
 str:
     .asciiz "Hello world!\n"
 .text
