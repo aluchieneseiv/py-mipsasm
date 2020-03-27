@@ -581,33 +581,29 @@ class Nop(Instruction):
 # Pseudoinstructions
 
 class PseudoInstruction(Instruction):
-    pass
-
-class Move(PseudoInstruction):
-    def __init__(self, dest, source):
-        self.dest = dest
-        self.source = source
+    def __init__(self, string, instr):
+        self.string = string
+        self.instr = instr
 
     def to_bytes(self, ctx):
-        return Addu(self.dest, self.source, regs.zero).to_bytes(ctx)
+        return b"".join(i.to_bytes(ctx) for i in self.instr)
 
     def __str__(self):
-        return f"move {self.dest}, {self.source}"
-
-class Li(PseudoInstruction):
-    def __init__(self, dest, imm):
-        self.dest = dest
-        self.imm = imm
-
-    def to_bytes(self, ctx):
-        return Addiu(self.dest, regs.zero, Constant(self.imm.val & 0xFFFF)).to_bytes(ctx) \
-            + Lui(self.dest, Constant(self.imm.val >> 16)).to_bytes(ctx)
-
-    def __str__(self):
-        return f"li {self.dest}, {self.imm}"
+        return self.string
 
     def __len__(self):
-        return 2
+        return sum(len(i) for i in self.instr)
+
+def Move(dest, source):
+    return PseudoInstruction(f"move {dest}, {source}", (
+        Addu(dest, source, regs.zero),
+    ))
+
+def Li(dest, imm):
+    return PseudoInstruction(f"li {dest}, {imm}", (
+        Addiu(dest, regs.zero, Constant(imm.val & 0xFFFF)),
+        Lui(dest, Constant(imm.val >> 16)),
+    ))
 
 class La(PseudoInstruction):
     def __init__(self, reg, lbl):
@@ -623,83 +619,59 @@ class La(PseudoInstruction):
     def __len__(self):
         return 2
 
-class Jf(PseudoInstruction):
-    def __init__(self, lbl):
-        self.lbl = lbl
+def Jf(lbl):
+    return PseudoInstruction(f"jf {lbl}", (
+        La(regs.at, lbl),
+        Jr(regs.at)
+    ))
 
-    def to_bytes(self, ctx):
-        return La(regs.at, self.lbl).to_bytes(ctx) \
-            + Jr(regs.at).to_bytes(ctx)
+def Blt_rr(reg, tst, lbl):
+    return PseudoInstruction(f"blt {reg}, {tst}, {lbl}", (
+        Slt(regs.at, reg, tst),
+        Bne(regs.at, regs.zero, lbl)
+    ))
 
-    def __str__(self):
-        return f"jf {self.lbl.name}"
+def Blt_ri(reg, imm, lbl):
+    return PseudoInstruction(f"blt {reg}, {imm}, {lbl}", (
+        Li(regs.at, imm),
+        Blt_rr(reg, regs.at)
+    ))
 
-    def __len__(self):
-        return 3
+def Bge_rr(reg, tst, lbl):
+    return PseudoInstruction(f"bge {reg}, {tst}, {lbl}", (
+        Slt(regs.at, reg, tst),
+        Beq(regs.at, regs.zero, lbl)
+    ))
 
-class Blt(PseudoInstruction):
-    def __init__(self, a, b, lbl):
-        self.a = a
-        self.b = b
-        self.lbl = lbl
+def Bge_ri(reg, imm, lbl):
+    return PseudoInstruction(f"bge {reg}, {imm}, {lbl}", (
+        Li(regs.at, imm),
+        Bge_rr(reg, regs.at)
+    ))
 
-    def to_bytes(self, ctx):
-        return Slt(regs.at, self.a, self.b).to_bytes(ctx) \
-            + Bne(regs.at, regs.zero, self.lbl).to_bytes(ctx)
+def Bgt_rr(reg, tst, lbl):
+    return PseudoInstruction(f"bgt {reg}, {tst}, {lbl}", (
+        Slt(regs.at, tst, a),
+        Bne(regs.at, regs.zero, lbl)
+    ))
 
-    def __str__(self):
-        return f"blt {self.a}, {self.b}, {self.lbl}"
+def Bgt_ri(reg, imm, lbl):
+    return PseudoInstruction(f"bgt {reg}, {imm}, {lbl}", (
+        Li(regs.at, imm),
+        Bgt_rr(reg, regs.at, lbl)
+    ))
 
-    def __len__(self):
-        return 2
+def Ble_rr(reg, tst, lbl):
+    return PseudoInstruction(f"ble {reg}, {tst}, {lbl}", (
+        Slt(regs.at, tst, reg),
+        Beq(regs.at, regs.zero, lbl)
+    ))
 
-class Bge(PseudoInstruction):
-    def __init__(self, a, b, lbl):
-        self.a = a
-        self.b = b
-        self.lbl = lbl
-
-    def to_bytes(self, ctx):
-        return Slt(regs.at, self.a, self.b).to_bytes(ctx) \
-            + Beq(regs.at, regs.zero, self.lbl).to_bytes(ctx)
-
-    def __str__(self):
-        return f"bge {self.a}, {self.b}, {self.lbl}"
-
-    def __len__(self):
-        return 2
-
-class Bgt(PseudoInstruction):
-    def __init__(self, a, b, lbl):
-        self.a = a
-        self.b = b
-        self.lbl = lbl
-
-    def to_bytes(self, ctx):
-        return Slt(regs.at, self.b, self.a).to_bytes(ctx) \
-            + Bne(regs.at, regs.zero, self.lbl).to_bytes(ctx)
-
-    def __str__(self):
-        return f"bgt {self.a}, {self.b}, {self.lbl}"
-
-    def __len__(self):
-        return 2
-
-class Ble(Instruction):
-    def __init__(self, a, b, lbl):
-        self.a = a
-        self.b = b
-        self.lbl = lbl
-
-    def to_bytes(self, ctx):
-        return Slt(regs.at, self.b, self.a).to_bytes(ctx) \
-            + Beq(regs.at, regs.zero, self.lbl).to_bytes(ctx)
-
-    def __str__(self):
-        return f"bgt {self.a}, {self.b}, {self.lbl}"
-
-    def __len__(self):
-        return 2
+def Ble_ri(reg, imm, lbl):
+    return PseudoInstruction(f"ble {reg}, {imm}, {lbl}", (
+        Li(regs.at, imm),
+        Ble_rr(reg, regs.at, lbl)
+    ))
 
 # Instruction resolving
 
@@ -751,18 +723,39 @@ _instruction_resolve = {
     ("li", "reg", "imm"): Li,
     ("la", "reg", "lbl"): La,
     ("jf", "lbl"): Jf,
-    ("blt", "reg", "reg", "lbl"): Blt,
-    ("ble", "reg", "reg", "lbl"): Ble,
-    ("bgt", "reg", "reg", "lbl"): Bgt,
-    ("bge", "reg", "reg", "lbl"): Bge,
+
+    ("blt", "reg", "reg", "lbl"): Blt_rr,
+    ("blt", "reg", "imm", "lbl"): Blt_ri,
+
+    ("ble", "reg", "reg", "lbl"): Ble_rr,
+    ("ble", "reg", "imm", "lbl"): Ble_ri,
+
+    ("bgt", "reg", "reg", "lbl"): Bgt_rr,
+    ("bgt", "reg", "imm", "lbl"): Bgt_ri,
+
+    ("bge", "reg", "reg", "lbl"): Bge_rr,
+    ("bge", "reg", "imm", "lbl"): Bge_ri,
 
     # Instruction aliases
 
-    ("not", "reg", "reg"): lambda dest, reg: Nor(dest, reg, reg.zero),
-    ("mov", "off", "reg"): lambda dest, source: Sw(source, dest),
-    ("mov", "reg", "off"): lambda dest, source: Lw(dest, source),
-    ("mov", "reg", "reg"): Move,
-    ("mov", "reg", "imm"): Li,
+    # Not
+    ("not", "reg", "reg"): lambda dest, reg: PseudoInstruction(f"not {dest}, {reg}", (
+        Nor(dest, reg, reg.zero),
+    )),
+
+    # Mov, because why not
+    ("mov", "off", "reg"): lambda dest, source: PseudoInstruction(f"mov {dest}, {source}", (
+        Sw(source, dest),
+    )),
+    ("mov", "reg", "off"): lambda dest, source: PseudoInstruction(f"mov {dest}, {source}", (
+        Lw(dest, source),
+    )),
+    ("mov", "reg", "reg"): lambda dest, source: PseudoInstruction(f"mov {dest}, {source}", (
+        Move(dest, source),
+    )),
+    ("mov", "reg", "imm"): lambda dest, source: PseudoInstruction(f"mov {dest}, {source}", (
+        Li(dest, source),
+    )),
 }
 
 def _type_match(args, form):
