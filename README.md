@@ -2,7 +2,7 @@
 A mips assembler... in python?
 
 ## What's implemented
-All non-fp instructions from [here](http://www-inst.eecs.berkeley.edu/~cs61c/resources/MIPS_Green_Sheet.pdf) (~~currently not all are tested~~base instructions have been tested, but no pseudoinstructions), labels, hex constants and the possibility to specify assembled code's place in memory.
+All non-fp instructions from [here](http://www-inst.eecs.berkeley.edu/~cs61c/resources/MIPS_Green_Sheet.pdf) (~~currently not all are tested~~ base instructions have been tested, but no pseudoinstructions), labels, hex constants and the possibility to specify assembled code's place in memory.
 
 The assembler creates two files:
 - `rom.mem`
