@@ -151,12 +151,12 @@ class Beq(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x4,
-            rt = self.a.reg_id,
-            rs = self.b.reg_id,
+            rt = self.b.reg_id,
+            rs = self.a.reg_id,
             imm = ctx.relative_jmp(self.lbl.name)
         ))
 
-    def __str__(self, ctx):
+    def __str__(self):
         return f"beq {self.a}, {self.b}, {self.lbl}"
 
 class Bne(Instruction):
@@ -168,8 +168,8 @@ class Bne(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x5,
-            rt = self.a.reg_id,
-            rs = self.b.reg_id,
+            rt = self.b.reg_id,
+            rs = self.a.reg_id,
             imm = ctx.relative_jmp(self.lbl.name)
         ))
     
@@ -224,7 +224,7 @@ class Lbu(Instruction):
         self.dest = dest
         self.offsetreg = offsetreg
 
-    def to_bytes(self):
+    def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x24,
             rt = self.dest.reg_id,
@@ -240,7 +240,7 @@ class Lhu(Instruction):
         self.dest = dest
         self.offsetreg = offsetreg
 
-    def to_bytes(self):
+    def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x25,
             rt = self.dest.reg_id,
@@ -265,7 +265,7 @@ class Ll(Instruction):
         ))
 
     def __str__(self):
-        return f"ll {self.reg}, {self.offsetreg}"
+        return f"ll {self.dest}, {self.offsetreg}"
 
 class Lui(Instruction):
     def __init__(self, dest, imm):
@@ -279,6 +279,9 @@ class Lui(Instruction):
             rt = self.dest.reg_id,
             imm = self.imm.val
         ))
+
+    def __str__(self):
+        return f"lui {self.dest}, {self.imm}"
 
 class Lw(Instruction):
     def __init__(self, dest, offsetreg):
@@ -303,9 +306,10 @@ class Nor(Instruction):
         self.b = b
 
     def to_bytes(self, ctx):
-        return RType(dict(
+        return RType.build(dict(
             op = 0x0,
             funct = 0x27,
+            shamt = 0,
             rd = self.dest.reg_id,
             rs = self.a.reg_id,
             rt = self.b.reg_id
@@ -324,6 +328,7 @@ class Or(Instruction):
         return RType.build(dict(
             op = 0x0,
             funct = 0x25,
+            shamt = 0,
             rd = self.dest.reg_id,
             rs = self.a.reg_id,
             rt = self.b.reg_id
@@ -374,7 +379,7 @@ class Slti(Instruction):
         self.reg = reg
         self.imm = imm
 
-    def to_bytes(self):
+    def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0xa,
             rt = self.dest.reg_id,
@@ -412,6 +417,7 @@ class Sltu(Instruction):
         return RType.build(dict(
             op = 0x0,
             funct = 0x2b,
+            shamt = 0,
             rs = self.a.reg_id,
             rt = self.b.reg_id,
             rd = self.dest.reg_id,
@@ -466,8 +472,8 @@ class Sb(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x28,
-            rs = self.source.reg_id,
-            rd = self.offsetreg.reg.reg_id,
+            rt = self.source.reg_id,
+            rs = self.offsetreg.reg.reg_id,
             imm = self.offsetreg.offset
         ))
 
@@ -482,8 +488,8 @@ class Sc(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x38,
-            rs = self.source.reg_id,
-            rt = self.offsetreg.reg.reg_id,
+            rt = self.source.reg_id,
+            rs = self.offsetreg.reg.reg_id,
             imm = self.offsetreg.offset
         ))
 
@@ -498,8 +504,8 @@ class Sh(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x29,
-            rs = self.source.reg_id,
-            rt = self.offsetreg.reg.reg_id,
+            rt = self.source.reg_id,
+            rs = self.offsetreg.reg.reg_id,
             imm = self.offsetreg.offset
         ))
 
@@ -514,8 +520,8 @@ class Sw(Instruction):
     def to_bytes(self, ctx):
         return IType_s.build(dict(
             op = 0x2b,
-            rs = self.source.reg_id,
-            rt = self.offsetreg.reg.reg_id,
+            rt = self.source.reg_id,
+            rs = self.offsetreg.reg.reg_id,
             imm = self.offsetreg.offset
         ))
 
@@ -711,7 +717,7 @@ _instruction_resolve = {
     ("addu", "reg", "reg", "reg"): Addu,
     ("and", "reg", "reg", "reg"): And,
     ("andi", "reg", "reg", "imm"): Andi,
-    ("beq", "reg", "reg", "reg"): Beq,
+    ("beq", "reg", "reg", "lbl"): Beq,
     ("bne", "reg", "reg", "lbl"): Bne,
     ("j", "lbl"): J,
     ("jal", "lbl"): Jal,
@@ -719,7 +725,7 @@ _instruction_resolve = {
     ("lbu", "reg", "off"): Lbu,
     ("lhu", "reg", "off"): Lhu,
     ("ll", "reg", "off"): Ll,
-    ("lui", "reg", "off"): Lui,
+    ("lui", "reg", "imm"): Lui,
     ("lw", "reg", "off"): Lw,
     ("nor", "reg", "reg", "reg"): Nor,
     ("or", "reg", "reg", "reg"): Or,

@@ -73,7 +73,7 @@ class Context:
         self._labels[label] = val
 
     def relative_jmp(self, label):
-        return self.get_label(label) - self.rom.addr + 1
+        return self.get_label(label) - self.rom.addr
 
     def absolute_jmp(self, label):
         new_pc = self.get_label(label)
