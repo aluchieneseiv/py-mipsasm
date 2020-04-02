@@ -78,8 +78,8 @@ class Context:
     def absolute_jmp(self, label):
         new_pc = self.get_label(label)
 
-        if self.rom.addr >> 30 == new_pc >> 30:
-            return ~((-1) << 30) & new_pc
+        if self.rom.addr >> 28 == new_pc >> 28:
+            return ~((-1) << 28) & new_pc
         
         raise Exception(f"Jump to label {label} is too far")
 
