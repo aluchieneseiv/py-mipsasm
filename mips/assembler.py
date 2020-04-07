@@ -2,6 +2,7 @@ import io
 from .parser import parse
 from .parsetypes import *
 from .instructions import Instruction
+from typing import Dict
 
 class MemoryFile:
     def __init__(self, filename, cell_size = 1, align = None):
@@ -54,8 +55,8 @@ class MemoryFile:
         self.file.close()
 
 class Context:
-    def __init__(self, ram, rom, debug=False):
-        self._labels = dict()
+    def __init__(self, ram: MemoryFile, rom: MemoryFile, debug=False):
+        self._labels: Dict[str, int] = dict()
         self.ram = ram
         self.rom = rom
         self.debug = debug
@@ -83,6 +84,96 @@ class Context:
         
         raise Exception(f"Jump to label {label} is too far")
 
+class FirstPass:
+    def __init__(self, ctx: Context):
+        self.ctx = ctx
+
+    def visit_DataSegment(self, segm: DataSegment):
+        self.data_addr = self.ctx.ram.addr
+
+        self.segm = 'data'
+        for line in segm.lines:
+            line.accept(self)
+
+    def visit_TextSegment(self, segm: TextSegment):
+        self.text_addr = self.ctx.rom.addr
+
+        self.segm = 'text'
+        for line in segm.lines:
+            line.accept(self)
+
+    def visit_Decl(self, line: Decl):
+        self.data_addr = self.data_addr + len(line)
+
+    def visit_Label(self, lbl: Label):
+        self.ctx.set_label(lbl.name, self.data_addr)
+
+    def visit_MemLabel(self, lbl: MemLabel):
+        if self.segm == 'data':
+            self.data_addr = lbl.addr
+        else:
+            self.text_addr = lbl.addr
+
+    def visit_Instruction(self, instr: Instruction):
+        self.text_addr = self.text_addr + len(instr)
+
+class SecondPass:
+    def __init__(self, ctx: Context, debug):
+        self.ctx = ctx
+        self.debug = debug
+
+    def visit_DataSegment(self, segm: DataSegment):
+            if self.debug:
+                print(".data")
+
+            self.segm = 'data'
+            for line in segm.lines:
+                line.accept(self)
+
+    def visit_TextSegment(self, segm: TextSegment):
+            if self.debug:
+                print(".text")
+
+            self.segm = 'text'
+            for line in segm.lines:
+                line.accept(self)
+
+    def visit_Decl(self, line: Decl):
+        b = line.to_bytes()
+        
+        if self.debug:
+            self.ctx.ram.write_bytes(b, comment=line)
+            print(b.hex(), line)
+        else:
+            self.ctx.ram.write_bytes(b)
+
+    def visit_Label(self, lbl: Label):
+        if self.debug:
+            print(lbl)
+
+            if self.segm == 'data':
+                self.ctx.ram.write_comment(lbl)
+            else:
+                self.ctx.rom.write_comment(lbl)
+
+    def visit_MemLabel(self, lbl: MemLabel):
+        if self.debug:
+            print(lbl)
+
+        if self.segm == 'data':
+            self.ctx.ram.set_addr(lbl.addr)
+        else:
+            self.ctx.rom.set_addr(lbl.addr)
+
+    def visit_Instruction(self, instr: Instruction):
+        b = instr.to_bytes(self.ctx)
+
+        if self.debug:
+            print(b.hex(), instr)
+            self.ctx.rom.write_bytes(b, comment=instr)
+        else:
+            self.ctx.rom.write_bytes(b)
+
 class Assembler:
     def __init__(self, outram, outrom, debug=False):
         self._debug = debug
@@ -94,29 +185,10 @@ class Assembler:
         segments = parse(lines)
 
         # first pass
+        first_pass = FirstPass(ctx)
 
         for segm in segments:
-            if isinstance(segm, DataSegment):
-                data_addr = self._ram.addr
-
-                for line in segm.lines:
-                    if isinstance(line, Decl):
-                        data_addr = data_addr + len(line)
-                    elif isinstance(line, Label):
-                        ctx.set_label(line.name, data_addr)
-                    elif isinstance(line, MemLabel):
-                        data_addr = line.addr
-                
-            elif isinstance(segm, TextSegment):
-                text_addr = self._rom.addr
-
-                for line in segm.lines:
-                    if isinstance(line, Instruction):
-                        text_addr = text_addr + len(line)
-                    elif isinstance(line, Label):
-                        ctx.set_label(line.name, text_addr)
-                    elif isinstance(line, MemLabel):
-                        text_addr = line.addr
+            segm.accept(first_pass)
 
         if self._debug:
             print("First pass complete!")
@@ -130,57 +202,10 @@ class Assembler:
                     
 
         # second pass
+        second_pass = SecondPass(ctx, self._debug)
 
         for segm in segments:
-            if isinstance(segm, DataSegment):
-                
-                if self._debug:
-                    print(".data")
-
-                for line in segm.lines:
-                    if isinstance(line, Decl):
-                        b = line.to_bytes()
-                        
-                        if self._debug:
-                            self._ram.write_bytes(b, comment=line)
-                            print(b.hex(), line)
-                        else:
-                            self._ram.write_bytes(b)
-
-                    elif isinstance(line, MemLabel):
-                        self._ram.set_addr(line.addr)
-
-                        if self._debug:
-                            print(line)
-
-                    elif self._debug:
-                        print(line)
-                        self._ram.write_comment(line)
-
-            if isinstance(segm, TextSegment):
-
-                if self._debug:
-                    print(".text")
-
-                for line in segm.lines:
-                    if isinstance(line, Instruction):
-                        b = line.to_bytes(ctx)
-
-                        if self._debug:
-                            print(b.hex(), line)
-                            self._rom.write_bytes(b, comment=line)
-                        else:
-                            self._rom.write_bytes(b)
-                    
-                    elif isinstance(line, MemLabel):
-                        self._rom.set_addr(line.addr)
-
-                        if self._debug:
-                            print(line)
-
-                    elif self._debug:
-                        print(line)
-                        self._rom.write_comment(line)
+            segm.accept(second_pass)
 
 
         if self._debug:
