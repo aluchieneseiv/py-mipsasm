@@ -34,6 +34,12 @@ class Instruction:
     def __len__(self):
         return 1
 
+    def accept(self, visitor):
+        visitor.visit_Instruction(self)
+
+    def to_bytes(self, ctx):
+        raise Exception("Invalid call")
+
 class Add(Instruction):
     def __init__(self, dest, a, b):
         self.dest = dest

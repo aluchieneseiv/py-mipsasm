@@ -41,6 +41,9 @@ class Label:
     def __repr__(self):
         return f"Label({self.name})"
 
+    def accept(self, visitor):
+        visitor.visit_Label(self)
+
 class LabelRef:
     def __init__(self, name):
         self.name = name
@@ -58,9 +61,21 @@ class MemLabel:
     def __str__(self):
         return f"@0x{self.addr:X}"
 
+    def accept(self, visitor):
+        visitor.visit_MemLabel(self)
+
 class Decl:
     def __init__(self, val):
         self.val = val
+
+    def __len__(self):
+        raise Exception("Invalid call")
+
+    def accept(self, visitor):
+        visitor.visit_Decl(self)
+
+    def to_bytes(self):
+        raise Exception("Invalid call")
 
 class WordDecl(Decl):
     def __str__(self):
@@ -119,10 +134,16 @@ class DataSegment:
     def __str__(self):
         return "<Data segment>"
 
+    def accept(self, visitor):
+        visitor.visit_DataSegment(self)
+
 class TextSegment:
     def __init__(self, lines):
         self.lines = lines
 
     def __str__(self):
         return "<Text segment>"
+
+    def accept(self, visitor):
+        visitor.visit_TextSegment(self)
 
